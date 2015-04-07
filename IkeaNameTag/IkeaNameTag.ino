@@ -6,7 +6,7 @@
 //////SWITCH CODE////////////////////
 int inPin = 2;         // the number of the input pin
 int outPin = 4;       // the number of the output pin
-boolean busy = false;
+boolean busy = false;  //busy is false at beginning
 int state = HIGH;      // the current state of the output pin
 int reading;           // the current reading from the input pin
 int previous = LOW;    // the previous reading from the input pin
@@ -56,51 +56,52 @@ void loop()
 	// if the input just went from LOW and HIGH and we've waited long enough
 	// to ignore any noise on the circuit, toggle the output pin and remember
 	// the time
-	if (reading == HIGH && previous == LOW && millis() - time > debounce) 
-	{
-		if (state == HIGH)
-		{
-			state = LOW;
-			busy = false;
-		}
-		else
-		{
-			state = HIGH;
-			busy = true;
-		}
-		time = millis();
-	}
-
 	digitalWrite(outPin, state);
 	previous = reading;
-	/////////SWITCH CODE END///////////////////////////
-	/////////BLUETOOTH CODE////////////////////////////
 	digitalWrite(13,LOW); //Turn off the onboard Arduino LED
-//	char recvChar;
-	while(1)
+	//char recvChar;
+	Serial.print("reading the button...");
+	if (reading == HIGH && previous == LOW && millis() - time > debounce) 
 	{
-		if(blueToothSerial.available())
-		{
-			//check if there's any data sent from the remote bluetooth shield
-			busy = blueToothSerial.read();
-			Serial.print(busy);
-			if (busy == false)
+		Serial.print("reading works");
+		if (state == HIGH)
 			{
-				blueToothSerial.print("false");
+				Serial.print("high");
+				Serial.print(busy);
+				state = LOW;
+				busy = true;
+				Serial.print(busy);
+				while(1)
+				{
+					if(blueToothSerial.available())
+					{
+						//sends a string containing "false" via bluetooth
+						blueToothSerial.print("true");
+					}
+				}
 			}
-			else if (busy == true)
+			else
 			{
-				blueToothSerial.print("true");
+				Serial.print("low");
+				Serial.print(busy);
+				state = HIGH;
+				//sets busy to true
+				busy = false;
+				Serial.print(busy);
+				while(1)
+				{
+					if(blueToothSerial.available())
+					{
+						//sends a string containing "true" via bluetooth
+						blueToothSerial.print("false");
+						
+					}
+				}
 			}
-		}
-		if(Serial.available())
-		{
-			busy = Serial.read();
-			//This will send value obtained (recvChar) to the phone. The value will be displayed on the phone.
-			blueToothSerial.print(busy);
-		}
+		time = millis();
 	}
 }
+
 ////nodig voor setup van bluetooth shield
 void setupBlueToothConnection()
 {
@@ -115,6 +116,7 @@ void setupBlueToothConnection()
 	delay(2000); // This delay is required.
 	blueToothSerial.flush();
 }
+
 //veranderd led op arduino
 void ClkProduce(void)
 {
