@@ -76,28 +76,28 @@ void loop()
 	/////////SWITCH CODE END///////////////////////////
 	/////////BLUETOOTH CODE////////////////////////////
 	digitalWrite(13,LOW); //Turn off the onboard Arduino LED
-	char recvChar;
+//	char recvChar;
 	while(1)
 	{
 		if(blueToothSerial.available())
 		{
 			//check if there's any data sent from the remote bluetooth shield
-			recvChar = blueToothSerial.read();
-			Serial.print(recvChar);
-			if (recvChar == 'off')
+			busy = blueToothSerial.read();
+			Serial.print(busy);
+			if (busy == false)
 			{
 				blueToothSerial.print("false");
 			}
-			else if (recvChar == 'on')
+			else if (busy == true)
 			{
 				blueToothSerial.print("true");
 			}
 		}
 		if(Serial.available())
 		{
-			recvChar = Serial.read();
+			busy = Serial.read();
 			//This will send value obtained (recvChar) to the phone. The value will be displayed on the phone.
-			blueToothSerial.print(recvChar);
+			blueToothSerial.print(busy);
 		}
 	}
 }
