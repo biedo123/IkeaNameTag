@@ -1,109 +1,77 @@
-#include <SoftwareSerial.h> //Software Serial Port
+#include <SoftwareSerial.h>
 #include <stdio.h>
 #include <util/delay_basic.h>
 
-//Bluetooth shield v1.1 by seeed studio used for this project
-//////SWITCH CODE////////////////////
-int inPin = 2;         // the number of the input pin
-int outPin = 4;       // the number of the output pin
-boolean busy = false;  //busy is false at beginning
-int state = HIGH;      // the current state of the output pin
-int reading;           // the current reading from the input pin
-int previous = LOW;    // the previous reading from the input pin
+// Bluetooth
+#define RxD 6 // Pin to transmit from Bluetooth(BT_TX) to Arduino(RxD)
+#define TxD 7 // Pin to receive from Bluetooth(BT_RX) to Arduino(TxD)
+#define BT_ONBOARD_LED 13 // On board LED
+SoftwareSerial blueToothSerial(RxD, TxD);
 
-// the follow variables are long's because the time, measured in miliseconds,
-// will quickly become a bigger number than can be stored in an int.
-long time = 0;         // the last time the output pin was toggled
-long debounce = 200;   // the debounce time, increase if the output flickers
-
-//////////////SWITCH CODE END///////////////
-
-//////////////BLUETOOTH CODE////////////////
-#define RxD 6 // This is the pin that the Bluetooth (BT_TX) will transmit to the Arduino (RxD)
-#define TxD 7 // This is the pin that the Bluetooth (BT_RX) will receive from the Arduino (TxD)
- 
+// Bluetooth Shield Debug
 #define DEBUG_ENABLED 1
+#define PIN_CLOCK 9 //RGB LED Clock Pin (Digital 9)
+#define PIN_DATA 8 //RGB LED Data Pin (Digital 8)
 
-int Clkpin = 9; //RGB LED Clock Pin (Digital 9)
-int Datapin = 8; //RGB LED Data Pin (Digital 8)
- 
-SoftwareSerial blueToothSerial(RxD,TxD);
-///////////BLUETOOTH CODE END////////////////
+// Pins
+#define PIN_BUTTON 2
+#define PIN_LED 4
 
+// Pin States
+int ledState = LOW;
+int previousButtonState;
+
+//
+long time = 0;
+long debounce = 200;
 
 void setup()
 {
-	///////SWITCH CODE//////////////
-	pinMode(inPin, INPUT);
-	pinMode(outPin, OUTPUT);
-	////////SWITCH CODE END//////////
-	///////BLUETOOTH CODE////////////
-	Serial.begin(9600); // Allow Serial communication via USB cable to computer (if required)
-	pinMode(RxD, INPUT); // Setup the Arduino to receive INPUT from the bluetooth shield on Digital Pin 6
-	pinMode(TxD, OUTPUT); // Setup the Arduino to send data (OUTPUT) to the bluetooth shield on Digital Pin 7
-	pinMode(13,OUTPUT); // Use onboard LED if required.
-	setupBlueToothConnection(); //Used to initialise the Bluetooth shield
- 
-	pinMode(Datapin, OUTPUT); // Setup the RGB LED Data Pin
-	pinMode(Clkpin, OUTPUT); // Setup the RGB LED Clock pin
+	// Setup Bluetooth Shield
+	pinMode(RxD, INPUT);
+	pinMode(TxD, OUTPUT);
+	pinMode(BT_ONBOARD_LED, OUTPUT);
+
+	// Bluetooth debug
+	pinMode(PIN_DATA, OUTPUT);
+	pinMode(PIN_CLOCK, OUTPUT);
+
+	// Initialize Bluetooth
+	InitializeBluetooth();
+
+
+	// Set pins
+	pinMode(PIN_BUTTON, INPUT);
+	pinMode(PIN_LED, OUTPUT);
+
+	// Default pin settings
+	digitalWrite(PIN_LED, ledState);
+
+	// Allow Serial communication via USB cable to computer (if required)
+	Serial.begin(9600);
 }
 
 void loop()
 {
-	 //////SWITCH CODE//////////////////////////
-	reading = digitalRead(inPin);
+	int currentButtonState = digitalRead(PIN_BUTTON); // Read if button is HIGH or LOW
 
-	// if the input just went from LOW and HIGH and we've waited long enough
-	// to ignore any noise on the circuit, toggle the output pin and remember
-	// the time
-	digitalWrite(outPin, state);
-	previous = reading;
-	digitalWrite(13,LOW); //Turn off the onboard Arduino LED
-	//char recvChar;
-	Serial.print("reading the button...");
-	if (reading == HIGH && previous == LOW && millis() - time > debounce) 
+	if (currentButtonState == HIGH && previousButtonState == LOW && millis() - time > debounce) // If button is pressed once
 	{
-		Serial.print("reading works");
-		if (state == HIGH)
-			{
-				Serial.print("high");
-				Serial.print(busy);
-				state = LOW;
-				busy = true;
-				Serial.print(busy);
-				while(1)
-				{
-					if(blueToothSerial.available())
-					{
-						//sends a string containing "false" via bluetooth
-						blueToothSerial.print("true");
-					}
-				}
-			}
-			else
-			{
-				Serial.print("low");
-				Serial.print(busy);
-				state = HIGH;
-				//sets busy to true
-				busy = false;
-				Serial.print(busy);
-				while(1)
-				{
-					if(blueToothSerial.available())
-					{
-						//sends a string containing "true" via bluetooth
-						blueToothSerial.print("false");
-						
-					}
-				}
-			}
-		time = millis();
+		Serial.print("Button is pressed"); // LOG
+		changeLedState(); // Change LED state
+		time = millis(); // Set time to check in next loop
 	}
+
+	digitalWrite(PIN_LED, ledState); // Apply ledState to LED
+	Serial.print("LED set to " + ledState); // LOG
+
+	if (ledState == HIGH) // If LED is on
+		sendBluetoothData("employee_busy:true");
+	else if (ledState == LOW) // If LED is off
+		sendBluetoothData("emplyee_busy:false");
 }
 
-////nodig voor setup van bluetooth shield
-void setupBlueToothConnection()
+void InitializeBluetooth()
 {
 	blueToothSerial.begin(38400); //Set BluetoothBee BaudRate to default baud rate 38400
 	blueToothSerial.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
@@ -117,21 +85,25 @@ void setupBlueToothConnection()
 	blueToothSerial.flush();
 }
 
-//veranderd led op arduino
-void ClkProduce(void)
+void sendBluetoothData(String data)
 {
-	digitalWrite(Clkpin, LOW);
-	delayMicroseconds(20); 
-	digitalWrite(Clkpin, HIGH);
-	delayMicroseconds(20); 
-}
- 
-void Send32Zero(void)
-{
-	unsigned char i;
-	for (i=0; i<32; i++)
+	while (1)
 	{
-		digitalWrite(Datapin, LOW);
-		ClkProduce();
+		if(blueToothSerial.available())
+		{
+			blueToothSerial.print(data);
+			Serial.print("Sent data over bluetooth: " + data); // LOG
+		}
 	}
+}
+
+void changeLedState()
+{
+	// Switch LED state
+	if (ledState == HIGH)
+		ledState == LOW;
+	else if (ledState == LOW)
+		ledState == HIGH;
+
+	Serial.print("Changed LED state to " + ledState); // LOG
 }
