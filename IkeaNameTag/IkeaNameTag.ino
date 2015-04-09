@@ -19,7 +19,7 @@ SoftwareSerial blueToothSerial(RxD, TxD);
 
 // Pin States
 int ledState = LOW;
-int previousButtonState;
+int previousButtonState = LOW;
 
 //
 long time = 0;
@@ -62,6 +62,7 @@ void loop()
 		time = millis(); // Set time to check in next loop
 	}
 
+	previousButtonState = currentButtonState; // Set current button state as previous for next loop
 	digitalWrite(PIN_LED, ledState); // Apply ledState to LED
 	Serial.print("LED set to " + ledState); // LOG
 
