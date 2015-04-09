@@ -85,6 +85,24 @@ void InitializeBluetooth()
 	blueToothSerial.flush();
 }
 
+void ClkProduce(void)
+{
+	digitalWrite(PIN_CLOCK, LOW);
+	delayMicroseconds(20);
+	digitalWrite(PIN_CLOCK, HIGH);
+	delayMicroseconds(20);
+}
+
+void Send32Zero(void)
+{
+	unsigned char i;
+	for (i = 0; i < 32; i++)
+	{
+		digitalWrite(PIN_DATA, LOW);
+		ClkProduce();
+	}
+}
+
 void sendBluetoothData(String data)
 {
 	while (1)
