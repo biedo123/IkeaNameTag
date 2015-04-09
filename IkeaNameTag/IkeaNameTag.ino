@@ -15,7 +15,7 @@ SoftwareSerial blueToothSerial(RxD, TxD);
 
 // Pins
 #define PIN_BUTTON 2
-#define PIN_LED 4
+#define PIN_LED 13
 
 // Pin States
 int ledState = LOW;
@@ -54,7 +54,6 @@ void setup()
 void loop()
 {
 	int currentButtonState = digitalRead(PIN_BUTTON); // Read if button is HIGH or LOW
-
 	if (currentButtonState == HIGH && previousButtonState == LOW && millis() - time > debounce) // If button is pressed once
 	{
 		Serial.print("Button is pressed"); // LOG
@@ -64,12 +63,18 @@ void loop()
 
 	previousButtonState = currentButtonState; // Set current button state as previous for next loop
 	digitalWrite(PIN_LED, ledState); // Apply ledState to LED
-	Serial.print("LED set to " + ledState); // LOG
+	Serial.print(ledState); // LOG
 
-	if (ledState == HIGH) // If LED is on
-		sendBluetoothData("employee_busy:true");
-	else if (ledState == LOW) // If LED is off
-		sendBluetoothData("emplyee_busy:false");
+	if (ledState == HIGH)
+        { // If LED is on
+          //Serial.print("true");	
+	  //sendBluetoothData("employee_busy:true");
+        }
+	else if (ledState == LOW)
+        { // If LED is off
+          //Serial.print("false");	
+	  //sendBluetoothData("emplyee_busy:false");
+        }
 }
 
 void InitializeBluetooth()
@@ -120,9 +125,12 @@ void changeLedState()
 {
 	// Switch LED state
 	if (ledState == HIGH)
-		ledState == LOW;
+        {
+	        ledState = LOW;
+        }
 	else if (ledState == LOW)
-		ledState == HIGH;
-
+        {
+		ledState = HIGH;
+        }
 	Serial.print("Changed LED state to " + ledState); // LOG
 }
