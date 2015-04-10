@@ -13,6 +13,7 @@ SoftwareSerial blueToothSerial(RxD, TxD);
 #define PIN_CLOCK 9 //RGB LED Clock Pin (Digital 9)
 #define PIN_DATA 8 //RGB LED Data Pin (Digital 8)
 
+
 // Pins
 #define PIN_BUTTON 2
 #define PIN_LED 13
@@ -63,17 +64,17 @@ void loop()
 
 	previousButtonState = currentButtonState; // Set current button state as previous for next loop
 	digitalWrite(PIN_LED, ledState); // Apply ledState to LED
-	Serial.print(ledState); // LOG
+	char data;
 
 	if (ledState == HIGH)
         { // If LED is on
-          //Serial.print("true");	
-	  //sendBluetoothData("employee_busy:true");
+          Serial.print("true");	
+	  sendBluetoothData("employee_busy:true");
         }
 	else if (ledState == LOW)
         { // If LED is off
-          //Serial.print("false");	
-	  //sendBluetoothData("emplyee_busy:false");
+          Serial.print("false");	
+	  sendBluetoothData("emplyee_busy:false");
         }
 }
 
@@ -81,7 +82,7 @@ void InitializeBluetooth()
 {
 	blueToothSerial.begin(38400); //Set BluetoothBee BaudRate to default baud rate 38400
 	blueToothSerial.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
-	blueToothSerial.print("\r\n+STNA=NaambordjeJanus\r\n"); //set the bluetooth name as "NaambordjeJanus"
+	blueToothSerial.print("\r\n+STNA=Naambordje Janus\r\n"); //set the bluetooth name as "NaambordjeJanus"
 	blueToothSerial.print("\r\n+STPIN=1337\r\n");//Set SLAVE pincode"1337"
 	blueToothSerial.print("\r\n+STOAUT=1\r\n"); // Permit Paired device to connect me
 	blueToothSerial.print("\r\n+STAUTO=0\r\n"); // Auto-connection should be forbidden here
@@ -109,16 +110,21 @@ void Send32Zero(void)
 	}
 }
 
-void sendBluetoothData(String data)
+
+
+void sendBluetoothData(char data[128])
 {
-	while (1)
-	{
 		if(blueToothSerial.available())
 		{
+  
 			blueToothSerial.print(data);
-			Serial.print("Sent data over bluetooth: " + data); // LOG
+			Serial.print("Sent data over bluetooth: "); // LOG
+			Serial.print(data);
 		}
-	}
+                else
+                {
+                        Serial.print(" not connected to a device via bluetooth, unable to send data ");
+                }  
 }
 
 void changeLedState()
@@ -132,5 +138,4 @@ void changeLedState()
         {
 		ledState = HIGH;
         }
-	Serial.print("Changed LED state to " + ledState); // LOG
 }
