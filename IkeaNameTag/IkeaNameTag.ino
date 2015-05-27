@@ -81,12 +81,12 @@ void loop()
           if (ledState == HIGH)
           { // If LED is on
             Serial.print("true");	
-  	    sendBluetoothData("/n employee_busy:true ");
+  	    sendBluetoothData("employee_busy:true");
           }
   	  else if (ledState == LOW)
           { // If LED is off
             Serial.print("false");	
-  	    sendBluetoothData("/n emplyee_busy:false ");
+  	    sendBluetoothData("emplyee_busy:false");
           }
           
           btTime = millis();
@@ -184,21 +184,9 @@ void DataDealWithAndSend(uint8 r, uint8 g, uint8 b){
 
 void sendBluetoothData(char data[128])
 {  
-   
-   
-                Serial.print(" bbb ");
                 Serial.print(blueToothSerial.available());
-                Serial.print(" AAA  ");
-                Serial.print(data);
-                blueToothSerial.print("Hello");
-		if(blueToothSerial.available())
-		{
-                         
-			  blueToothSerial.println(data);
-			  Serial.print("Sent data over bluetooth: "); // LOG
-			  Serial.print(data);
-                }
-    
+                blueToothSerial.print(data);
+
    
 }
 
