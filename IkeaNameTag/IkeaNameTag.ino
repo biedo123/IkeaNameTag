@@ -3,10 +3,16 @@
 #include <util/delay_basic.h>
 
 // Bluetooth
+
+#define uint8 unsigned char 
+#define uint16 unsigned int
+#define uint32 unsigned long int
+
 #define RxD 6 // Pin to transmit from Bluetooth(BT_TX) to Arduino(RxD)
 #define TxD 7 // Pin to receive from Bluetooth(BT_RX) to Arduino(TxD)
 #define BT_ONBOARD_LED 13 // On board LED
 SoftwareSerial blueToothSerial(RxD, TxD);
+
 
 // Bluetooth Shield Debug
 #define DEBUG_ENABLED 1
@@ -22,12 +28,15 @@ SoftwareSerial blueToothSerial(RxD, TxD);
 int ledState = LOW;
 int previousButtonState = LOW;
 
-//
-long time = 0;
-long debounce = 200;
+//Timers
+long time = 0; //Button
+long debounce = 200; //Button
+long btTime = 0; //BT
+long btDebounce = 1000; //BT
 
 void setup()
 {
+  Serial.begin(9600);
 	// Setup Bluetooth Shield
 	pinMode(RxD, INPUT);
 	pinMode(TxD, OUTPUT);
@@ -49,11 +58,12 @@ void setup()
 	digitalWrite(PIN_LED, ledState);
 
 	// Allow Serial communication via USB cable to computer (if required)
-	Serial.begin(9600);
+
 }
 
 void loop()
 {
+        digitalWrite(BT_ONBOARD_LED,LOW);
 	int currentButtonState = digitalRead(PIN_BUTTON); // Read if button is HIGH or LOW
 	if (currentButtonState == HIGH && previousButtonState == LOW && millis() - time > debounce) // If button is pressed once
 	{
@@ -66,32 +76,49 @@ void loop()
 	digitalWrite(PIN_LED, ledState); // Apply ledState to LED
 	char data;
 
-	if (ledState == HIGH)
-        { // If LED is on
-          Serial.print("true");	
-	  sendBluetoothData("employee_busy:true");
+        if(millis() - btTime > btDebounce)
+        {
+          if (ledState == HIGH)
+          { // If LED is on
+            Serial.print("true");	
+  	    sendBluetoothData("/n employee_busy:true ");
+          }
+  	  else if (ledState == LOW)
+          { // If LED is off
+            Serial.print("false");	
+  	    sendBluetoothData("/n emplyee_busy:false ");
+          }
+          
+          btTime = millis();
         }
-	else if (ledState == LOW)
-        { // If LED is off
-          Serial.print("false");	
-	  sendBluetoothData("emplyee_busy:false");
+
+        if(blueToothSerial.available())
+        {
+           blueToothSerial.read();
         }
 }
 
 void InitializeBluetooth()
 {
+  Serial.print("begin");
+  Serial.print(blueToothSerial.available());
 	blueToothSerial.begin(38400); //Set BluetoothBee BaudRate to default baud rate 38400
 	blueToothSerial.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
-	blueToothSerial.print("\r\n+STNA=Naambordje Janus\r\n"); //set the bluetooth name as "NaambordjeJanus"
-	blueToothSerial.print("\r\n+STPIN=1337\r\n");//Set SLAVE pincode"1337"
+	blueToothSerial.print("\r\n+STNA=Naambordje\r\n"); //set the bluetooth name as "NaambordjeJanus"
+	blueToothSerial.print("\r\n+STPIN=0000\r\n");//Set SLAVE pincode"1337"
 	blueToothSerial.print("\r\n+STOAUT=1\r\n"); // Permit Paired device to connect me
 	blueToothSerial.print("\r\n+STAUTO=0\r\n"); // Auto-connection should be forbidden here
 	delay(2000); // This delay is required.
 	blueToothSerial.print("\r\n+INQ=1\r\n"); //make the slave bluetooth inquirable 
-	delay(2000); // This delay is required.
+	 Serial.println("The slave bluetooth is inquirable!");
+        delay(2000); // This delay is required.
 	blueToothSerial.flush();
+Serial.print(blueToothSerial.available());
+Serial.print("End");
 }
 
+
+//BEGIN het in stand houden van blu
 void ClkProduce(void)
 {
 	digitalWrite(PIN_CLOCK, LOW);
@@ -109,23 +136,72 @@ void Send32Zero(void)
 		ClkProduce();
 	}
 }
+uint8 TakeAntiCode(uint8 dat){
+ uint8 tmp = 0;
+ if ((dat & 0x80) == 0){
+ tmp |= 0x02; 
+ }
+ 
+ if ((dat & 0x40) == 0){
+ tmp |= 0x01; 
+ }
+ 
+ return tmp;
+}
+ 
+// gray data
+void DatSend(uint32 dx){
+ uint8 i;
+ for (i=0; i<32; i++){
+ if ((dx & 0x80000000) != 0){
+ digitalWrite(PIN_DATA, HIGH);
+ } else {
+ digitalWrite(PIN_DATA, LOW);
+ }
+ 
+ dx <<= 1;
+ ClkProduce();
+ }
+}
+ 
+// data processing
+void DataDealWithAndSend(uint8 r, uint8 g, uint8 b){
+ uint32 dx = 0;
+ 
+ dx |= (uint32)0x03 << 30; // highest two bits 1，flag bits
+ dx |= (uint32)TakeAntiCode(b) << 28;
+ dx |= (uint32)TakeAntiCode(g) << 26; 
+ dx |= (uint32)TakeAntiCode(r) << 24;
+ 
+ dx |= (uint32)b << 16;
+ dx |= (uint32)g << 8;
+ dx |= r;
+ 
+ DatSend(dx);
+}
 
 
 
 void sendBluetoothData(char data[128])
-{
+{  
+   
+   
+                Serial.print(" bbb ");
+                Serial.print(blueToothSerial.available());
+                Serial.print(" AAA  ");
+                Serial.print(data);
+                blueToothSerial.print("Hello");
 		if(blueToothSerial.available())
 		{
-  
-			blueToothSerial.print(data);
-			Serial.print("Sent data over bluetooth: "); // LOG
-			Serial.print(data);
-		}
-                else
-                {
-                        Serial.print(" not connected to a device via bluetooth, unable to send data ");
-                }  
+                         
+			  blueToothSerial.println(data);
+			  Serial.print("Sent data over bluetooth: "); // LOG
+			  Serial.print(data);
+                }
+    
+   
 }
+
 
 void changeLedState()
 {
