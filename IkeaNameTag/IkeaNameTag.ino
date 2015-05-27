@@ -105,7 +105,7 @@ void InitializeBluetooth()
 	blueToothSerial.begin(38400); //Set BluetoothBee BaudRate to default baud rate 38400
 	blueToothSerial.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
 	blueToothSerial.print("\r\n+STNA=Naambordje\r\n"); //set the bluetooth name as "NaambordjeJanus"
-	blueToothSerial.print("\r\n+STPIN=0000\r\n");//Set SLAVE pincode"1337"
+	blueToothSerial.print("\r\n+STPIN=1111\r\n");//Set SLAVE pincode"1337"
 	blueToothSerial.print("\r\n+STOAUT=1\r\n"); // Permit Paired device to connect me
 	blueToothSerial.print("\r\n+STAUTO=0\r\n"); // Auto-connection should be forbidden here
 	delay(2000); // This delay is required.
@@ -180,16 +180,11 @@ void DataDealWithAndSend(uint8 r, uint8 g, uint8 b){
  DatSend(dx);
 }
 
-
-
 void sendBluetoothData(char data[128])
 {  
                 Serial.print(blueToothSerial.available());
                 blueToothSerial.print(data);
-
-   
 }
-
 
 void changeLedState()
 {
